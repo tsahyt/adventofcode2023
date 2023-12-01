@@ -1,4 +1,5 @@
 module Main where
+
 import Data.Char (isDigit)
 import Data.List (isPrefixOf)
 
@@ -19,15 +20,6 @@ readDigits x =
   let
     digits = map (read . pure) . filter isDigit $ x
   in head digits * 10 + last digits
-
-ex2 =
-        ["two1nine",
-        "eightwothree",
-        "abcone2threexyz",
-        "xtwone3four",
-        "4nineeightseven2",
-        "zoneight234",
-        "7pqrstsixteen"]
 
 convert :: String -> String
 convert [] = []
