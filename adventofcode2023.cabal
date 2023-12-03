@@ -66,3 +66,10 @@ executable day2
     build-depends:    base ^>=4.18.0.0
     hs-source-dirs:   exe
     default-language: GHC2021
+
+executable day3
+    import:           warnings
+    main-is:          Day3.hs
+    build-depends:    base ^>=4.18.0.0, containers
+    hs-source-dirs:   exe
+    default-language: GHC2021
