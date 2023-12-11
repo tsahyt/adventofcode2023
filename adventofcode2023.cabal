@@ -122,3 +122,10 @@ executable day10
     build-depends:    base ^>=4.18.0.0, algebraic-graphs, containers
     hs-source-dirs:   exe
     default-language: GHC2021
+
+executable day11
+    import:           warnings
+    main-is:          Day11.hs
+    build-depends:    base ^>=4.18.0.0, containers
+    hs-source-dirs:   exe
+    default-language: GHC2021
