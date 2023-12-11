@@ -12,7 +12,7 @@ main :: IO ()
 main = do
   (graph, start) <- parseGraph <$> readFile "inputs/day10"
   print $ part1 graph start
-  print $ part2
+  print $ part2 graph start
 
 type Pos = (Int, Int)
 
@@ -40,8 +40,19 @@ parseGraph s =
           ]
       _ -> []
 
+area :: [Pos] -> Int
+area xs = (sum . map trapezoid $ zip xs (tail . cycle $ xs)) `div` 2
+  where
+    trapezoid ((y1, x1), (y2, x2)) = (y1 + y2) * (x1 - x2)
+
+interior :: Int -> Int -> Int
+interior a b = a + 1 - b `div` 2
+
 part1 :: AdjacencyMap Pos -> Pos -> Int
 part1 g = (`div` 2) . length . G.reachable g
 
-part2 :: String
-part2 = "not doing flood fills this year"
+part2 :: AdjacencyMap Pos -> Pos -> Int
+part2 g s =
+  let loop = G.reachable g s
+      a = area loop
+   in interior a (length loop)
