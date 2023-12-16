@@ -1,10 +1,9 @@
 module Main where
 
+import Data.Foldable (toList)
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Set qualified as S
-import Data.Foldable (toList)
-import Data.List (nub)
 
 main :: IO ()
 main = do
@@ -29,11 +28,14 @@ data Tile
   | SplitHorizontal
   | MirrorForward
   | MirrorBackward
-  deriving Show
+  deriving (Show)
 
 parse :: String -> Map Pos Tile
-parse = M.fromList .
-  concatMap (\(i, s) -> map (\(j, c) -> ((i, j), tile c)) . zip [0..] $ s) . zip [0..] . lines
+parse =
+  M.fromList
+    . concatMap (\(i, s) -> map (\(j, c) -> ((i, j), tile c)) . zip [0 ..] $ s)
+    . zip [0 ..]
+    . lines
   where
     tile '/' = MirrorForward
     tile '\\' = MirrorBackward
@@ -41,17 +43,17 @@ parse = M.fromList .
     tile '-' = SplitHorizontal
     tile _ = Empty
 
--- | Generalized breadth first traversal
-bft :: (Foldable t, Ord a) => (a -> t a) -> t a -> [a]
-bft suc = go S.empty . toList
-    where go _ [] = []
-          go visited (n:ns)
-              | n `S.member` visited = go visited ns
-              | otherwise = n : go (n `S.insert` visited)
-                                   (ns ++ toList (suc n))
+-- | Breadth first traversal
+bft :: ((Pos, Direction) -> [(Pos, Direction)]) -> [(Pos, Direction)] -> Int
+bft suc = S.size . S.map fst . go S.empty . toList
+  where
+    go visited [] = visited
+    go visited (n : ns)
+      | n `S.member` visited = go visited ns
+      | otherwise = go (n `S.insert` visited) (ns ++ toList (suc n))
 
-shine :: Pos -> Direction -> Map Pos Tile -> [Pos]
-shine sp sd m = nub . map fst . bft suc $ [(sp, sd)]
+shine :: Pos -> Direction -> Map Pos Tile -> Int
+shine sp sd m = bft suc $ [(sp, sd)]
   where
     suc (pos, dir) =
       filter (flip M.member m . fst) $ case (M.lookup pos m, dir) of
@@ -84,7 +86,7 @@ border m = north <> east <> south <> west
     west = [((x, 0), East) | x <- [0 .. maxV]]
 
 part1 :: Map Pos Tile -> Int
-part1 = length . shine (0,0) East
+part1 = shine (0, 0) East
 
 part2 :: Map Pos Tile -> Int
-part2 m = maximum . map (\(sp, sd) -> length $ shine sp sd m) $ border m
+part2 m = maximum . map (\(sp, sd) -> shine sp sd m) $ border m
