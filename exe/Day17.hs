@@ -47,7 +47,7 @@ noReverse :: History -> History -> Bool
 noReverse (History _ approach) (History _ d1) = d1 /= opposite approach
 
 minMoves :: Int -> History -> History -> Bool
-minMoves l (History s2 _) (History s1 _) = (s1 == 1 && s2 /= 0) ==> s2 >= l
+minMoves l (History s2 _) (History s1 _) = not (s1 == 1 && s2 /= 0) || s2 >= l
 
 parse :: String -> Map Pos Int
 parse =
@@ -59,11 +59,27 @@ parse =
 manhattan :: Pos -> Pos -> Int
 manhattan (ax, ay) (bx, by) = abs (bx - ax) + abs (by - ay)
 
-crucible :: Bool -> Map Pos Int -> Pos -> Pos -> Maybe Int
-crucible ultra m from to =
+unconstrained :: Map Pos Int -> Map Pos Int
+unconstrained m = m'
+  where
+    maxPos = maximum . M.keys $ m
+    m' = M.fromList (map go (M.keys m))
+
+    go :: Pos -> (Pos, Int)
+    go pos@(i, j)
+      | pos == maxPos = (pos, m M.! pos)
+      | otherwise =
+        let
+          c = m M.! pos
+          h = minimum ([ m' M.! pos' | pos' <- [ (i + 1, j), (i, j + 1) ], pos' `M.member` m])
+        in (pos, c + h)
+
+crucible :: Int -> Int -> Map Pos Int -> Pos -> Pos -> Maybe Int
+crucible minDist maxDist m from to =
   fmap (sum . map ((m M.!) . fst)) $
   aStar neighbors cost heuristic goal (from, History 0 East)
   where
+    m' = unconstrained m
     neighbors ((i, j), hist) =
       HS.fromList $
         filter
@@ -73,23 +89,17 @@ crucible ultra m from to =
             ((i, j - 1), move West hist),
             ((i, j + 1), move East hist)
           ]
-    heuristic (pos, _) = manhattan pos to
-    goal (pos, History x _)
-      | ultra = x >= 4 && pos == to
-      | otherwise = pos == to
+    heuristic (pos, _) = if minDist > 0 then m' M.! pos else manhattan pos to
+    goal (pos, History x _) = x >= minDist && pos == to
     constraints current pos hist =
       pos `M.member` m
-        && atMostDir (if ultra then 10 else 3) hist
+        && atMostDir maxDist hist
         && noReverse current hist
-        && (ultra ==> minMoves 4 current hist)
+        && minMoves minDist current hist
     cost _ (pos, _) = m M.! pos
 
-infixl 3 ==>
-(==>) :: Bool -> Bool -> Bool
-a ==> b = not a || b
-
 part1 :: Map Pos Int -> Maybe Int
-part1 m = crucible False m (0, 0) (maximum . M.keys $ m)
+part1 m = crucible 0 3 m (0, 0) (maximum . M.keys $ m)
 
 part2 :: Map Pos Int -> Maybe Int
-part2 m = crucible True m (0, 0) (maximum . M.keys $ m)
+part2 m = crucible 4 10 m (0, 0) (maximum . M.keys $ m)
