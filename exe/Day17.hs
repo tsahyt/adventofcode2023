@@ -1,15 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
 import Data.Graph.AStar
+import Data.HashSet qualified as HS
+import Data.Hashable (Hashable)
 import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
-import qualified Data.HashSet as HS
 
 main :: IO ()
 main = do
@@ -51,28 +51,37 @@ minMoves l (History s1 _ s2 _) = (s1 == 1 && s2 /= 0) ==> s2 >= l
 
 parse :: String -> Map Pos Int
 parse =
-  M.fromList .
-  concatMap (\(i, s) -> map (\(j, c) -> ((i, j), read . pure $ c)) . zip [0..] $ s) .
-  zip [0..] . lines
+  M.fromList
+    . concatMap (\(i, s) -> map (\(j, c) -> ((i, j), read . pure $ c)) . zip [0 ..] $ s)
+    . zip [0 ..]
+    . lines
 
 manhattan :: Pos -> Pos -> Int
 manhattan (ax, ay) (bx, by) = abs (bx - ax) + abs (by - ay)
 
 crucible :: Bool -> Map Pos Int -> Pos -> Pos -> Maybe Int
-crucible ultra m from to = fmap (sum . map ((m M.!) . fst)) $ aStar neighbors cost heuristic goal (from, History 0 East 0 East)
+crucible ultra m from to =
+  fmap (sum . map ((m M.!) . fst)) $
+  aStar neighbors cost heuristic goal (from, History 0 East 0 East)
   where
-    neighbors ((i, j), hist) = HS.fromList $ filter (uncurry constraints)
-      [ ((i - 1, j), move North hist), ((i + 1, j), move South hist)
-      , ((i, j - 1), move West hist), ((i, j + 1), move East hist) ]
+    neighbors ((i, j), hist) =
+      HS.fromList $
+        filter
+          (uncurry constraints)
+          [ ((i - 1, j), move North hist),
+            ((i + 1, j), move South hist),
+            ((i, j - 1), move West hist),
+            ((i, j + 1), move East hist)
+          ]
     heuristic (pos, _) = manhattan pos to
     goal (pos, History x _ _ _)
       | ultra = x >= 4 && pos == to
       | otherwise = pos == to
     constraints pos hist =
       pos `M.member` m
-      && atMostDir (if ultra then 10 else 3) hist
-      && noReverse hist
-      && (ultra ==> minMoves 4 hist)
+        && atMostDir (if ultra then 10 else 3) hist
+        && noReverse hist
+        && (ultra ==> minMoves 4 hist)
     cost _ (pos, _) = m M.! pos
 
 infixl 3 ==>
@@ -80,7 +89,7 @@ infixl 3 ==>
 a ==> b = not a || b
 
 part1 :: Map Pos Int -> Maybe Int
-part1 m = crucible False m (0,0) (maximum . M.keys $ m)
+part1 m = crucible False m (0, 0) (maximum . M.keys $ m)
 
-part2 :: Map Pos Int -> Maybe _
-part2 m = crucible True m (0,0) (maximum . M.keys $ m)
+part2 :: Map Pos Int -> Maybe Int
+part2 m = crucible True m (0, 0) (maximum . M.keys $ m)
