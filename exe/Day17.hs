@@ -30,24 +30,24 @@ opposite East = West
 opposite South = North
 opposite West = East
 
-data History = History !Int !Direction !Int !Direction
+data History = History !Int !Direction
   deriving (Eq, Ord, Generic, Show)
 
 instance Hashable History
 
 move :: Direction -> History -> History
-move d (History s1 d1 s2 d2)
-  | d == d1 = History (s1 + 1) d s2 d2
-  | otherwise = History 1 d s1 d1
+move d (History s1 d1)
+  | d == d1 = History (s1 + 1) d
+  | otherwise = History 1 d
 
 atMostDir :: Int -> History -> Bool
-atMostDir l (History s1 _ s2 _) = s1 <= l && s2 <= l
+atMostDir l (History s1 _) = s1 <= l
 
-noReverse :: History -> Bool
-noReverse (History _ d1 _ d2) = d1 /= opposite d2
+noReverse :: History -> History -> Bool
+noReverse (History _ approach) (History _ d1) = d1 /= opposite approach
 
-minMoves :: Int -> History -> Bool
-minMoves l (History s1 _ s2 _) = (s1 == 1 && s2 /= 0) ==> s2 >= l
+minMoves :: Int -> History -> History -> Bool
+minMoves l (History s2 _) (History s1 _) = (s1 == 1 && s2 /= 0) ==> s2 >= l
 
 parse :: String -> Map Pos Int
 parse =
@@ -62,26 +62,26 @@ manhattan (ax, ay) (bx, by) = abs (bx - ax) + abs (by - ay)
 crucible :: Bool -> Map Pos Int -> Pos -> Pos -> Maybe Int
 crucible ultra m from to =
   fmap (sum . map ((m M.!) . fst)) $
-  aStar neighbors cost heuristic goal (from, History 0 East 0 East)
+  aStar neighbors cost heuristic goal (from, History 0 East)
   where
     neighbors ((i, j), hist) =
       HS.fromList $
         filter
-          (uncurry constraints)
+          (uncurry (constraints hist))
           [ ((i - 1, j), move North hist),
             ((i + 1, j), move South hist),
             ((i, j - 1), move West hist),
             ((i, j + 1), move East hist)
           ]
     heuristic (pos, _) = manhattan pos to
-    goal (pos, History x _ _ _)
+    goal (pos, History x _)
       | ultra = x >= 4 && pos == to
       | otherwise = pos == to
-    constraints pos hist =
+    constraints current pos hist =
       pos `M.member` m
         && atMostDir (if ultra then 10 else 3) hist
-        && noReverse hist
-        && (ultra ==> minMoves 4 hist)
+        && noReverse current hist
+        && (ultra ==> minMoves 4 current hist)
     cost _ (pos, _) = m M.! pos
 
 infixl 3 ==>
