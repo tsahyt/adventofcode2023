@@ -154,6 +154,6 @@ executable day16
 executable day17
     import:           warnings
     main-is:          Day17.hs
-    build-depends:    base ^>=4.18.0.0, containers, search-algorithms
+    build-depends:    base ^>=4.18.0.0, containers, astar, unordered-containers, hashable
     hs-source-dirs:   exe
     default-language: GHC2021
