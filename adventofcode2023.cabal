@@ -137,6 +137,13 @@ executable day12
     hs-source-dirs:   exe
     default-language: GHC2021
 
+executable day14
+    import:           warnings
+    main-is:          Day14.hs
+    build-depends:    base ^>=4.18.0.0, containers, extra
+    hs-source-dirs:   exe
+    default-language: GHC2021
+
 executable day15
     import:           warnings
     main-is:          Day15.hs
